@@ -1,0 +1,13 @@
+# Kubernetes Service - exposes app via NodePort
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-monitor
+spec:
+  type: NodePort
+  selector:
+    app: service-monitor
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30080

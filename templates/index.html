@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Service Monitoring Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1117;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 40px 24px;
+        }
+
+        .container { max-width: 960px; margin: 0 auto; }
+
+        /* Header */
+        .header { margin-bottom: 32px; }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.5px;
+        }
+        .header p { color: #64748b; font-size: 14px; margin-top: 4px; }
+
+        /* Stats row */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: #1e2130;
+            border: 1px solid #2d3148;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-card .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; }
+        .stat-card .value { font-size: 32px; font-weight: 700; margin-top: 6px; }
+        .stat-card.total .value  { color: #818cf8; }
+        .stat-card.up    .value  { color: #34d399; }
+        .stat-card.down  .value  { color: #f87171; }
+
+        /* Form */
+        .form-card {
+            background: #1e2130;
+            border: 1px solid #2d3148;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 28px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .form-card input {
+            flex: 1;
+            background: #0f1117;
+            border: 1px solid #2d3148;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #e2e8f0;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-card input:focus { border-color: #818cf8; }
+        .form-card input::placeholder { color: #475569; }
+        .form-card button {
+            background: #818cf8;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .form-card button:hover { background: #6366f1; }
+
+        /* Alert */
+        .alert {
+            background: #2d1b1b;
+            border: 1px solid #7f1d1d;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+        }
+        .alert .alert-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #f87171;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .alert ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+        .alert ul li {
+            font-size: 13px;
+            color: #fca5a5;
+            padding: 4px 0;
+            border-bottom: 1px solid #3d2020;
+        }
+        .alert ul li:last-child { border-bottom: none; }
+
+        /* Table */
+        .table-card {
+            background: #1e2130;
+            border: 1px solid #2d3148;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        thead tr { background: #161827; }
+        th {
+            padding: 12px 18px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #64748b;
+            text-align: left;
+        }
+        tbody tr { border-top: 1px solid #2d3148; transition: background 0.15s; }
+        tbody tr:hover { background: #252840; }
+        td { padding: 14px 18px; font-size: 14px; }
+        td.url { color: #a5b4fc; }
+        td.url a { color: inherit; text-decoration: none; }
+        td.url a:hover { text-decoration: underline; }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.up   { background: #052e16; color: #34d399; border: 1px solid #166534; }
+        .badge.down { background: #2d1b1b; color: #f87171; border: 1px solid #7f1d1d; }
+        .badge::before { content: '●'; font-size: 8px; }
+
+        .rt { color: #94a3b8; font-size: 13px; }
+
+        .empty { padding: 48px; text-align: center; color: #475569; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>⚡ Service Monitoring Dashboard</h1>
+        <p>Track uptime and response times for your services</p>
+    </div>
+
+    <!-- Stats -->
+    {% set up_count   = services | selectattr("status", "equalto", "UP")   | list | length %}
+    {% set down_count = services | selectattr("status", "equalto", "DOWN") | list | length %}
+    <div class="stats">
+        <div class="stat-card total">
+            <div class="label">Total Services</div>
+            <div class="value">{{ services | length }}</div>
+        </div>
+        <div class="stat-card up">
+            <div class="label">Online</div>
+            <div class="value">{{ up_count }}</div>
+        </div>
+        <div class="stat-card down">
+            <div class="label">Offline</div>
+            <div class="value">{{ down_count }}</div>
+        </div>
+    </div>
+
+    <!-- Add Service Form -->
+    <form method="POST">
+        <div class="form-card">
+            <input type="text" name="url" placeholder="Enter service URL (e.g. https://example.com)" required>
+            <button type="submit">+ Add &amp; Check</button>
+        </div>
+    </form>
+
+    <!-- Alert Section -->
+    {% set failed = services | selectattr("status", "equalto", "DOWN") | list %}
+    {% if failed %}
+    <div class="alert">
+        <div class="alert-title">⚠ Failed Services ({{ failed | length }})</div>
+        <ul>
+            {% for svc in failed %}
+            <li>{{ svc.url }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Table -->
+    <div class="table-card">
+        {% if services %}
+        <table>
+            <thead>
+                <tr>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Response Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for svc in services %}
+                <tr>
+                    <td class="url"><a href="{{ svc.url }}" target="_blank">{{ svc.url }}</a></td>
+                    <td>
+                        <span class="badge {{ svc.status | lower }}">{{ svc.status }}</span>
+                    </td>
+                    <td class="rt">{{ svc.response_time }} ms</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">No services added yet. Add a URL above to get started.</div>
+        {% endif %}
+    </div>
+
+</div>
+</body>
+</html>

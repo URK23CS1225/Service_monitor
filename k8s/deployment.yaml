@@ -1,0 +1,20 @@
+# Kubernetes Deployment for Service Monitor
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-monitor
+  template:
+    metadata:
+      labels:
+        app: service-monitor
+    spec:
+      containers:
+        - name: service-monitor
+          image: service-monitor:latest
+          ports:
+            - containerPort: 5000
