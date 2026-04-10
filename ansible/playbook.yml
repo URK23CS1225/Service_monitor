@@ -1,0 +1,55 @@
+---
+# Ansible playbook: installs Docker and runs the service-monitor container
+
+- name: Deploy Service Monitor
+  hosts: servers
+  become: true
+
+  tasks:
+    - name: Install Docker dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: true
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: true
+
+    - name: Start and enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Pull service-monitor image (if pushed to registry)
+      community.docker.docker_image:
+        name: service-monitor
+        tag: latest
+        source: pull
+      ignore_errors: true  # skip if not on a registry
+
+    - name: Run service-monitor container
+      community.docker.docker_container:
+        name: service-monitor
+        image: service-monitor:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "5000:5000"
